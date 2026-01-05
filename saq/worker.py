@@ -11,7 +11,6 @@ import os
 import signal
 import sys
 import traceback
-import threading
 import typing as t
 import typing_extensions as te
 from concurrent.futures import ThreadPoolExecutor
@@ -136,7 +135,6 @@ class Worker(t.Generic[CtxType]):
         self.burst = burst
         self.max_burst_jobs = max_burst_jobs
         self.burst_jobs_processed = 0
-        self.burst_jobs_processed_lock = threading.Lock()
         self.burst_condition_met = False
         self._metadata = metadata
         self._poll_interval = poll_interval
@@ -453,10 +451,9 @@ class Worker(t.Generic[CtxType]):
         if not job_dequeued:
             self.burst_condition_met = True
         elif self.max_burst_jobs is not None:
-            with self.burst_jobs_processed_lock:
-                self.burst_jobs_processed += 1
-                if self.burst_jobs_processed >= self.max_burst_jobs:
-                    self.burst_condition_met = True
+            self.burst_jobs_processed += 1
+            if self.burst_jobs_processed >= self.max_burst_jobs:
+                self.burst_condition_met = True
         return self.burst_condition_met
 
 
